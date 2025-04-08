@@ -9,13 +9,24 @@ export const verifyToken = (req, res, next) => {
   if (authHeader) {
     const token = authHeader.split(' ')[1]; // Bearer <token>
 
-    jwt.verify(token, process.env.JWT_SECRET_KEY, (err, user) => {
+    jwt.verify(token, process.env.JWT_SECRET_KEY, {
+     
+      // issuer: 'your-issuer',
+      // audience: 'your-audience',
+    }, (err, decoded) => {
       if (err) {
-        return res.status(403).json({ message: 'Invalid token.' });
+        if (err.name === 'TokenExpiredError') {
+          return res.status(403).json({ message: 'Token expired.' });
+        } else {
+          return res.status(403).json({ message: 'Invalid token.' });
+        }
       }
 
-      req.user = user; // Set user object to request
-      next(); // Proceed to next middleware or route handler
+      req.user = {
+        _id: decoded._id,
+        role: decoded.role,
+      }; 
+      next();
     });
   } else {
     return res.status(401).json({ message: 'You are not authenticated.' });

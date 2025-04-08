@@ -11,6 +11,10 @@ body('counselor').notEmpty().withMessage('Counselor is required'),
 body('date').notEmpty().withMessage('Date is required'),
 body('sessionType').notEmpty().withMessage('Session type is required'),
 ], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   try {
     const appointment = new Appointment(req.body);
     await appointment.save();

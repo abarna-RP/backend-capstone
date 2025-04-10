@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import dotenv from "dotenv";
 import Payment from '../models/Payment.js';
-
+import mongoose from 'mongoose';
 
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -9,6 +9,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export const createCheckoutSession = async (req, res) => {
     try {
         const { client, counselor, amount, paymentMethod } = req.body;
+         // Validate client and counselor IDs
+         if (!mongoose.Types.ObjectId.isValid(client) || !mongoose.Types.ObjectId.isValid(counselor)) {
+            return res.status(400).json({ message: 'Invalid client or counselor ID.' });
+        }
 
         const line_items = [{
             price_data: {

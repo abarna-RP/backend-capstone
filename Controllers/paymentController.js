@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import dotenv from "dotenv";
 import Payment from '../models/Payment.js';
-import { verifyToken } from '../middleware/auth.js';
+
 
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);

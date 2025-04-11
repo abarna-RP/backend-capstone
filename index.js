@@ -12,7 +12,6 @@ import { generateAgoraToken } from './utils/videoCall.js';
 
 dotenv.config();
 
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 connectDB();

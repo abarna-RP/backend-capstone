@@ -2,17 +2,20 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import connectDB from './config/dbConfig.js';
 import authRoutes from './routes/auth.js';
 import counselorRoutes from './routes/counselor.js';
 import clientRoutes from './routes/client.js';
 import appointmentRoutes from './routes/appointment.js';
 import paymentRoutes from './routes/payment.js';
 import { generateAgoraToken } from './utils/videoCall.js';
+
 dotenv.config();
 
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+connectDB();
 
 app.use(cors());
 app.use(express.json());

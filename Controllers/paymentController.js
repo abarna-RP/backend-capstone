@@ -1,27 +1,34 @@
 import Stripe from "stripe";
-import Payment from '../models/Payment.js';
-import Client from '../models/Client.js'; // Add these imports
-import Counselor from '../models/Counselor.js';
+import dotenv from "dotenv";
+import Client from '../models/Client.js'; 
+import Counselor from '../models/Counselor.js'; 
+import mongoose from 'mongoose'; 
+
+dotenv.config();
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const createCheckoutSession = async (req, res) => {
     try {
-        const { client, counselor, amount, paymentMethod } = req.body;
+        const { client, counselor, amount } = req.body;
 
-        // Validate IDs exist in database
+        if (!mongoose.Types.ObjectId.isValid(client) || !mongoose.Types.ObjectId.isValid(counselor)) {
+            return res.status(400).json({ message: "Invalid client or counselor ID format" });
+        }
+
+        
         const [clientExists, counselorExists] = await Promise.all([
             Client.findById(client),
             Counselor.findById(counselor)
         ]);
 
         if (!clientExists || !counselorExists) {
-            return res.status(400).json({ 
-                message: "Invalid client or counselor ID" 
-            });
+            return res.status(400).json({ message: "Invalid client or counselor ID" });
         }
 
-        // Convert amount to number if sent as string
+       
         const amountNum = Number(amount);
-        if (isNaN(amountNum)) {
+        if (!amount || isNaN(amountNum)) {
             return res.status(400).json({ message: "Invalid amount" });
         }
 
@@ -38,26 +45,14 @@ export const createCheckoutSession = async (req, res) => {
             payment_method_types: ["card"],
             line_items,
             mode: "payment",
-            success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.FRONTEND_URL}/cancel`,
+            success_url: "http://localhost:5173/success", 
+            cancel_url: "http://localhost:5173/cancel", 
         });
-
-        const payment = new Payment({
-            client: clientExists._id, // Use validated ID
-            counselor: counselorExists._id,
-            amount: amountNum,
-            paymentMethod,
-            stripeChargeId: session.id,
-        });
-
-        await payment.save();
 
         res.json({ url: session.url });
 
     } catch (error) {
-        console.error("Payment error:", error);
-        res.status(500).json({ 
-            message: error.message || "Payment processing failed" 
-        });
+        console.error(error.message);
+        res.status(500).json({ message: error.message });
     }
 };

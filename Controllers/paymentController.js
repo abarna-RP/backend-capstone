@@ -1,10 +1,8 @@
 import Stripe from "stripe";
 import Payment from '../models/Payment.js';
-import Client from '../models/Client.js'; // "User" என்பதற்கு பதிலாக "Client"
+import User from '../models/User.js';
 import Counselor from '../models/Counselor.js';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose'; // mongoose இறக்குமதி
-
 dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -12,17 +10,17 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export const createCheckoutSession = async (req, res) => {
     try {
         const { client, counselor, amount, paymentMethod } = req.body;
-
-        // ObjectId வடிவம் சரிபார்க்கப்பட்டது
-        if (!mongoose.Types.ObjectId.isValid(client) || !mongoose.Types.ObjectId.isValid(counselor)) {
-            return res.status(400).json({ message: "Invalid client or counselor ID format" });
-        }
-
-        const clientExists = await Client.findById(client); // "User" என்பதற்கு பதிலாக "Client"
-        const counselorExists = await Counselor.findById(counselor);
+        
+       
+        const clientExists = await User.findById(client)
+        const counselorExists = await Counselor.findById(counselor)
+       
+       
 
         if (!clientExists || !counselorExists) {
-            return res.status(400).json({ message: "Invalid client or counselor ID" });
+            return res.status(400).json({
+                message: "Invalid client or counselor ID"
+            });
         }
 
         const amountNum = Number(amount);
@@ -43,9 +41,10 @@ export const createCheckoutSession = async (req, res) => {
             payment_method_types: ["card"],
             line_items,
             mode: "payment",
-            success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`, // {{}} நீக்கப்பட்டது
+            success_url: `${process.env.FRONTEND_URL}/success?session_id={{CHECKOUT_SESSION_ID}}`,
             cancel_url: `${process.env.FRONTEND_URL}/cancel`,
         });
+        
 
         const payment = new Payment({
             client: clientExists._id,
@@ -60,7 +59,9 @@ export const createCheckoutSession = async (req, res) => {
         res.json({ url: session.url });
 
     } catch (error) {
-        console.error("Payment error:", error); // முழு பிழை பதிவு
-        res.status(500).json({ message: error.message || "Payment processing failed" });
+        console.error("Payment error:", error);
+        res.status(500).json({
+            message: error.message || "Payment processing failed"
+        });
     }
 };

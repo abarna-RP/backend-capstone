@@ -9,6 +9,10 @@ const router = express.Router();
 
 // Registration
 router.post('/register', async (req, res) => {
+  console.log("k")
+  console.log(req.body)
+
+
   const { username, email, password, role, name, specialization, preferences, sessionRate } = req.body;
 
   try {
@@ -39,7 +43,7 @@ router.post('/register', async (req, res) => {
     await newUser.save();
 
     const token = jwt.sign({ _id: newUser._id, role: newUser.role }, process.env.JWT_SECRET_KEY);
-    res.status(201).send({ token, role: newUser.role });
+   res.status(201).send({ token, role: newUser.role , userId:newUser._id });
   } catch (error) {
     res.status(500).send(error.message);
   }

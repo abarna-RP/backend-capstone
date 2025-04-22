@@ -1,3 +1,4 @@
+// routes/payment.js
 import express from 'express';
 import { createCheckoutSession } from "../Controllers/paymentController.js";
 import { verifyToken } from '../middleware/auth.js'; // Verify token middleware

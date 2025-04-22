@@ -1,3 +1,4 @@
+// routes/client.js
 import express from 'express';
 import Client from '../models/Client.js';
 import { verifyToken } from '../middleware/auth.js';

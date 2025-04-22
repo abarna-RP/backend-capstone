@@ -1,3 +1,4 @@
+// models/counselor.js
 import mongoose from 'mongoose';
 
 const counselorSchema = new mongoose.Schema({

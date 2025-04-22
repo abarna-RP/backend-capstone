@@ -1,3 +1,4 @@
+//routes/counselor.js
 import express from 'express';
 import Counselor from '../models/Counselor.js';
 import { verifyToken } from '../middleware/auth.js';

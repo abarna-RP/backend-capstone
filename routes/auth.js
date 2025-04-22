@@ -7,17 +7,16 @@ import Client from '../models/Client.js';
 
 const router = express.Router();
 
-// Registration
+// ✅ Registration Route
 router.post('/register', async (req, res) => {
-  console.log("k")
-  console.log(req.body)
-
+  console.log("Registration request received");
+  console.log(req.body);
 
   const { username, email, password, role, name, specialization, preferences, sessionRate } = req.body;
 
   try {
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).send('Email already exists');
+    if (existingUser) return res.status(400).json({ error: 'Email already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -27,7 +26,7 @@ router.post('/register', async (req, res) => {
     } else if (role === 'client') {
       profile = new Client({ name, preferences });
     } else {
-      return res.status(400).send('Invalid role');
+      return res.status(400).json({ error: 'Invalid role' });
     }
 
     await profile.save();
@@ -41,30 +40,42 @@ router.post('/register', async (req, res) => {
     });
 
     await newUser.save();
-    
 
     const token = jwt.sign({ _id: newUser._id, role: newUser.role }, process.env.JWT_SECRET_KEY);
-   res.status(201).send({ token, role: newUser.role , userId:newUser._id });
+    res.status(201).json({
+      token,
+      role: newUser.role,
+      userId: newUser._id,
+      username: newUser.username
+    });
   } catch (error) {
-    res.status(500).send(error.message);
+    console.error('Registration error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Login
+// ✅ Login Route
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).send('Invalid email or password');
+    if (!user) return res.status(400).json({ error: 'Invalid email or password' });
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(400).send('Invalid email or password');
+    if (!validPassword) return res.status(400).json({ error: 'Invalid email or password' });
 
     const token = jwt.sign({ _id: user._id, role: user.role }, process.env.JWT_SECRET_KEY);
-    res.send({ token, role: user.role,userId:user._id });
+
+    res.json({
+      token,
+      role: user.role,
+      userId: user._id,
+      username: user.username
+    });
   } catch (error) {
-    res.status(500).send(error.message);
+    console.error('Login error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

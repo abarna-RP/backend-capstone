@@ -1,3 +1,4 @@
+// controllers/paymentController.js
 import Stripe from "stripe";
 import Payment from '../models/Payment.js';
 import User from '../models/User.js';

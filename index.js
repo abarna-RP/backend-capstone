@@ -1,4 +1,3 @@
-//index.js
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
@@ -9,8 +8,8 @@ import counselorRoutes from './routes/counselor.js';
 import clientRoutes from './routes/client.js';
 import appointmentRoutes from './routes/appointment.js';
 import paymentRoutes from './routes/payment.js';
-import { generateAgoraToken } from './utils/videoCall.js';
-
+ // Import the updated function
+import { google } from 'googleapis';
 dotenv.config();
 
 const app = express();
@@ -19,6 +18,20 @@ connectDB();
 
 app.use(cors());
 app.use(express.json());
+
+
+const { OAuth2 } = google.auth;
+
+const oAuth2Client = new OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI // Ensure this is configured in your Google Cloud Console
+);
+
+oAuth2Client.setCredentials({
+  refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+});
+const calendar = google.calendar({ version: 'v3', auth: oAuth2Client })
 
 mongoose
   .connect(process.env.MONGODB_URI, {
@@ -34,26 +47,50 @@ app.use('/counselors', counselorRoutes);
 app.use('/clients', clientRoutes);
 app.use('/appointments', appointmentRoutes);
 app.use('/payments', paymentRoutes);
-app.get('/video-token', (req, res) => {
-  const { channelName, uid } = req.query;
 
-  if (!channelName || !uid) {
-    return res.status(400).send({ error: 'channelName and uid are required' });
-  }
 
+app.post('/create-meet-link', async (req, res) => {
   try {
-    console.log('Generating token for:', channelName, uid);
-    const token = generateAgoraToken(channelName, uid);
-    res.send({ token });
+    const event = {
+      summary: 'Counseling Session',
+      description: 'Video call for the counseling session.',
+      start: {
+        dateTime: new Date().toISOString(), // You might want to allow scheduling
+        timeZone: 'Asia/Kolkata', // Adjust to your timezone
+      },
+      end: {
+        dateTime: new Date(Date.now() + 3600000).toISOString(), // Session duration (1 hour)
+        timeZone: 'Asia/Kolkata', // Adjust to your timezone
+      },
+      conferenceData: {
+        createRequest: {
+          requestId: Math.random().toString(36).substring(7), // Unique ID for the meeting
+        },
+      },
+      attendees: [
+        // You could potentially add the client's email here if you have it
+      ],
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: 'popup', minutes: 30 },
+        ],
+      },
+    };
+
+    const response = await calendar.events.insert({
+      calendarId: 'primary', // Use 'primary' for the authenticated user's calendar
+      resource: event,
+      conferenceDataVersion: 1,
+    });
+
+    res.json({ meetLink: response.data.hangoutLink });
   } catch (error) {
-    console.error('Error generating token:', error);
-    res.status(500).send({ error: 'Token generation failed' });
+    console.error('Error creating Google Meet link:', error);
+    res.status(500).json({ error: 'Failed to create Google Meet link' });
   }
 });
 
-app.use((req, res) => {
-  console.log("404")
-  res.json({ message: '404' })
-})
-
-app.listen(PORT, () => console.log(`Server running on port: ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Counselor backend server listening on port ${PORT}`);
+});

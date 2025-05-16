@@ -8,7 +8,7 @@ import counselorRoutes from './routes/counselor.js';
 import clientRoutes from './routes/client.js';
 import appointmentRoutes from './routes/appointment.js';
 import paymentRoutes from './routes/payment.js';
-import { google }  from 'googleapis';
+import { google } from 'googleapis';
 
 dotenv.config();
 
@@ -42,11 +42,11 @@ oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN })
 
 const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-app.get('/create-meet', async (req, res) => {
-  const { summary, startTime, endTime, attendeeEmail } = req.query;
+app.post('/create-meet', async (req, res) => {
+  const { startTime, endTime, timeZone, summary, attendeeEmail } = req.body;
 
-  if (!summary || !startTime || !endTime || !attendeeEmail) {
-    return res.status(400).json({ error: 'summary, startTime, endTime, and attendeeEmail are required' });
+  if (!summary || !startTime || !endTime || !attendeeEmail || !timeZone) {
+    return res.status(400).json({ error: 'summary, startTime, endTime, attendeeEmail, and timeZone are required in the request body' });
   }
 
   try {
@@ -54,9 +54,9 @@ app.get('/create-meet', async (req, res) => {
       calendarId: 'primary',
       conferenceDataVersion: 1,
       requestBody: {
-        summary,
-        start: { dateTime: new Date(startTime).toISOString(), timeZone: 'Asia/Kolkata' },
-        end: { dateTime: new Date(endTime).toISOString(), timeZone: 'Asia/Kolkata' },
+        summary: summary,
+        start: { dateTime: new Date(startTime).toISOString(), timeZone: timeZone },
+        end: { dateTime: new Date(endTime).toISOString(), timeZone: timeZone },
         attendees: [{ email: attendeeEmail }],
         conferenceData: {
           createRequest: {
@@ -78,10 +78,9 @@ app.get('/create-meet', async (req, res) => {
   }
 });
 
-
 app.use((req, res) => {
   console.log("404")
-  res.json({ message: '404' });
+  res.status(404).json({ message: '404 Not Found' }); // Status code-ஐயும் மாத்துங்க
 });
 
 app.listen(PORT, () => console.log(`Server running on port: ${PORT}`));
